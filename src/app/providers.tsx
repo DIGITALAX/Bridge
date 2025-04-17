@@ -82,9 +82,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         THEME_COLORS[THEME_COLORS.indexOf(color) + 1]
       );
     } else {
-      setColor(THEME_COLORS[0]);
-      setHeartColor(HEART_COLORS[0]);
-      localStorage.setItem("digi-theme-color-bridge", THEME_COLORS[0]);
+      setColor(THEME_COLORS[1]);
+      setHeartColor(HEART_COLORS[1]);
+      localStorage.setItem("digi-theme-color-bridge", THEME_COLORS[1]);
     }
   };
 
