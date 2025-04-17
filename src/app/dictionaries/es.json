@@ -1,0 +1,32 @@
+{
+  "common": {
+    "bend": "NO DOBLAR",
+    "select": "elige idioma",
+    "soon": "pronto",
+    "ve": "sigue",
+    "bridge": "TRANSFERIR",
+    "bridgeM": "TRANSFERIR MONA",
+    "approve": "APROBAR",
+    "dest": "Destinación:",
+    "source": "Fuente:",
+    "chain": "¡No puedes transferir a la misma cadena!",
+    "tokens": "No hay tokens suficientes en tu billetera :(",
+    "bridging": "Tus tokens están en camino. Podría tomar un par de minutos.",
+    "coming": "pronto",
+    "tran": "TRANSACTIONS",
+    "connect": "Conectarse",
+    "disconnect": "Salir",
+    "notran": "Aún, no has transferido tokens :)"
+  },
+  "404": {
+    "glitch": "Ha habido un fallo en el tejido. Encuentra tu camino de vuelta a",
+    "home": "casa."
+  },
+
+  "footer": {
+    "maps": "Desde minimapas y segmentación de malla, hasta máquinas sintetizadoras y el uso de materiales, el ecosistema de moda web3 ofrece más que unas cuantas buenas apariencias.\n\n Para los coleccionistas, los creadores, y todos los demás, es más peligroso que nunca aventurarse solo allá afuera.\n\nVístete con inteligencia, y no olvides tus llaves.",
+    "rewind": "Sé amable, Rebobina",
+    "line": "FIN DE LA LÍNEA",
+    "heart": "Desde el corazón, traducciones a mano <3"
+  }
+}

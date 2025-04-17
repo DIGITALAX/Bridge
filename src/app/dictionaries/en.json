@@ -1,0 +1,31 @@
+{
+  "common": {
+    "bend": "DO NOT BEND",
+    "select": "select language",
+    "soon": "soon",
+    "ve": "go",
+    "bridge": "BRIDGE",
+    "bridgeM": "BRIDGE MONA",
+    "dest": "Destination:",
+    "source": "Source:",
+    "chain": "Can't bridge to the same chain!",
+    "tokens": "Not Enough Tokens in Your Wallet :(",
+    "bridging": "Your tokens are on the way. This might take a few minutes.",
+    "approve": "APPROVE",
+    "coming": "coming soon",
+    "tran": "TRANSACTIONS",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "notran": "You haven't bridge anything yet :)"
+  },
+  "404": {
+    "glitch": "There's been a glitch in the fabric. Find your way back",
+    "home": "home."
+  },
+  "footer": {
+    "maps": "From mini-maps and mesh segmentation, to synth machines and material use, the web3 fashion ecosystem supplies more than a few good looks.\n\nFor collectors, creators, and everyone in between, it’s more dangerous than ever to go it alone out there.\n\nDress wisely, and take your keys with you.",
+    "rewind": "Be Kind, Rewind",
+    "line": "END OF LINE",
+    "heart": "Translating by hand, with heart <3"
+  }
+}
