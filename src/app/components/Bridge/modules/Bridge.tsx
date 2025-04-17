@@ -127,15 +127,15 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
           {(chains?.from?.id == 137 && chains?.to?.id == 232) ||
           (chains?.from?.id == 232 && chains?.to?.id == 137) ? (
             <div className="relative w-full h-fit flex flex-col gap-5 items-center justify-start">
-              <div className="relative w-fit h-10 flex">
-                {dict?.common?.coming}
+              <div className="relative w-fit h-10 flex uppercase">
+                {dict?.common?.coming}...
               </div>
             </div>
           ) : (
             <div className="relative w-full h-fit flex flex-row gap-3 items-center justify-center">
               <div className="relative w-fit h-fit flex">
                 <input
-                  className="relative rounded-md w-28 h-10 focus:outline-none flex border border-mainText text-sm p-1"
+                  className="relative rounded-md w-28 h-10 focus:outline-none flex border border-mainText text-sm p-3"
                   type="number"
                   min={0}
                   step={1}
