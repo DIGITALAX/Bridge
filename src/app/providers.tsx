@@ -132,7 +132,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           >
             <div
               className={`flex relative w-full h-full ${
-                color ? `theme-${color}` : "theme-cream"
+                color ? `theme-${color}` : "theme-dark"
               }`}
             >
               {children}

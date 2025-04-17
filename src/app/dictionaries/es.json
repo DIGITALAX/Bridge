@@ -16,7 +16,8 @@
     "tran": "TRANSACTIONS",
     "connect": "Conectarse",
     "disconnect": "Salir",
-    "notran": "Aún, no has transferido tokens :)"
+    "notran": "Aún, no has transferido tokens :)",
+    "portal": "Transferencia directa en el<br/>Portal de Polygon"
   },
   "404": {
     "glitch": "Ha habido un fallo en el tejido. Encuentra tu camino de vuelta a",

@@ -24,14 +24,14 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
   } = useBridge(dict);
   return (
     <div className="relative w-full h-fit flex items-center justify-center font-aud">
-      <div className="relative sm:w-96 w-full px-2 py-6 gap-10 border border-mainText rounded-md items-center justify-between flex flex-col">
+      <div className="relative sm:w-[30rem] w-full px-2 py-6 gap-10 border border-mainText rounded-md items-center justify-between flex flex-col">
         <div className="relative underline underline-offset-4 uppercase flex w-fit h-fit text-2xl">
           {dict?.common?.bridgeM}
         </div>
 
         <div className="relative w-full h-fit flex flex-col gap-5 items-center justify-start">
-          <div className="relative w-full h-fit flex flex-row flex-wrap gap-6 items-center justify-center">
-            <div className="relative w-fit h-fit flex items-center justify-center gap-2">
+          <div className="relative w-full h-fit flex flex-row sm:flex-nowrap flex-wrap gap-6 items-center justify-center">
+            <div className="relative w-full h-fit flex items-center justify-center gap-2">
               <div className="relative w-fit h-fit flex">
                 {dict?.common?.source}
               </div>
@@ -82,7 +82,7 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
                 />
               </div>
             </div>
-            <div className="relative w-fit h-fit flex items-center justify-center gap-2">
+            <div className="relative w-full h-fit flex items-center justify-center gap-2">
               <div className="relative w-fit h-fit flex">
                 {dict?.common?.dest}
               </div>
@@ -131,6 +131,19 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
                 {dict?.common?.coming}...
               </div>
             </div>
+          ) : (chains?.from?.id == 137 && chains?.to?.id == 1) ||
+            (chains?.from?.id == 1 && chains?.to?.id == 137) ? (
+            <div className="relative w-full h-fit flex flex-col gap-5 items-center justify-start">
+              <div
+                className="relative w-fit h-10 flex uppercase cursor-sewingHS text-center text-sm"
+                onClick={() =>
+                  window.open("https://portal.polygon.technology/bridge")
+                }
+                dangerouslySetInnerHTML={{
+                  __html: `${dict?.common?.portal}...` || "",
+                }}
+              ></div>
+            </div>
           ) : (
             <div className="relative w-full h-fit flex flex-row gap-3 items-center justify-center">
               <div className="relative w-fit h-fit flex">
@@ -157,18 +170,20 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
             (!isApproved ? handleApprove() : handleBridgeAmount())
           }
         >
-          <div className="relative w-28 h-10 flex items-center justify-center rounded-md border border-mainText text-sm">
-            {bridgeLoading ? (
-              <AiOutlineLoading
-                className="animate-spin"
-                color={context?.heartColor}
-                size={15}
-              />
-            ) : !isApproved ? (
-              dict?.common?.approve
-            ) : (
-              dict?.common?.bridge
-            )}
+          <div className="relative w-28 h-10 flex items-center justify-center text-center rounded-md border border-mainText text-sm">
+            <div className="relative w-fit h-fit flex">
+              {bridgeLoading ? (
+                <AiOutlineLoading
+                  className="animate-spin"
+                  color={context?.heartColor}
+                  size={15}
+                />
+              ) : !isApproved ? (
+                dict?.common?.approve
+              ) : (
+                dict?.common?.bridge
+              )}
+            </div>
           </div>
         </div>
       </div>

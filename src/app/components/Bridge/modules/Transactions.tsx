@@ -9,11 +9,11 @@ const Transactions: FunctionComponent<TransactionsProps> = ({
   const { allTransactions, transactionsLoading } = useTransactions(dict);
   return (
     <div
-      className={`relative w-full h-fit px-10 flex items-center justify-start font-aud ${
+      className={`relative w-full h-fit sm:px-10 flex items-center justify-start font-aud ${
         transactionsLoading && "animate-pulse"
       }`}
     >
-      <div className="relative px-2 py-6 w-full h-[50vh] border border-mainText rounded-md flex flex-col gap-6 items-center justify-start flex-col font-aud">
+      <div className="relative px-2 py-6 w-full h-[50vh] border-2 border-mainHighlight rounded-md flex flex-col gap-6 items-center justify-start flex-col font-aud">
         <div className="relative w-1/2 h-fit flex items-center justify-center gap-2 flex-col">
           <div className="relative w-fit h-fit flex text-center">
             {dict?.common?.tran}

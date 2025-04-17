@@ -16,7 +16,8 @@
     "tran": "TRANSACTIONS",
     "connect": "Connect",
     "disconnect": "Disconnect",
-    "notran": "You haven't bridge anything yet :)"
+    "notran": "You haven't bridge anything yet :)",
+    "portal": "Bridge directly at the<br/>Polygon Portal"
   },
   "404": {
     "glitch": "There's been a glitch in the fabric. Find your way back",

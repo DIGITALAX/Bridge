@@ -16,7 +16,7 @@ const useTransactions = (dict: any) => {
       const res = await fetch("/api/swagger", {
         method: "POST",
         body: JSON.stringify({
-          address: "0xAA3e5ee4fdC831e5274FE7836c95D670dC2502e6",
+          address,
         }),
       });
 

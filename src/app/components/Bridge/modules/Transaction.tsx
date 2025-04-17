@@ -11,9 +11,9 @@ const Transaction: FunctionComponent<TransactionProps> = ({
   dict,
 }): JSX.Element => {
   return (
-    <div className="relative w-full h-fit flex text-sm px-2 flex-col gap-2 items-start justify-start">
+    <div className="relative w-full h-fit flex text-sm px-2 flex-col gap-5 sm:gap-2 items-start justify-start">
       <div className="relative w-full h-fit flex">
-        <div className="relative w-full h-10 flex items-center justify-between gap-5">
+        <div className="relative w-full h-fit sm:h-10 flex items-center justify-center sm:justify-between gap-5 sm:flex-nowrap flex-wrap">
           <div className="relative w-fit h-fit flex">
             {moment(transaction?.created).fromNow()}
           </div>
@@ -48,8 +48,8 @@ const Transaction: FunctionComponent<TransactionProps> = ({
           </div>
         </div>
       </div>
-      <div className="relative w-full h-fit flex flex-col gap-2">
-        <div className="relative w-full h-fit flex gap-5 items-center justify-between">
+      <div className="relative w-full h-fit flex flex-col gap-5 sm:gap-2">
+        <div className="relative w-full h-fit flex gap-2 sm:gap-5 items-center justify-center sm:justify-between sm:flex-nowrap flex-wrap">
           <div className="relative w-fit gap-3 flex items-center justify-center flex-row">
             <div className="relative w-fit h-fit flex">
               {dict?.common?.source}
@@ -87,7 +87,7 @@ const Transaction: FunctionComponent<TransactionProps> = ({
             />
           </div>
         </div>
-        <div className="relative w-full h-fit flex gap-5 items-center justify-between">
+        <div className="relative w-full h-fit flex gap-2 sm:gap-5  items-center justify-center sm:justify-between sm:flex-nowrap flex-wrap">
           <div className="relative w-fit gap-3 flex items-center justify-center flex-row">
             <div className="relative w-fit h-fit flex">
               {dict?.common?.dest}
