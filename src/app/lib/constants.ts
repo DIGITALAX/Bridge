@@ -17,7 +17,6 @@ export const idToImage: { [key in number]: string } = {
 export const idToExplorer: { [key in number]: string } = {
   [30373]: "https://explorer.lens.xyz/tx/",
   [30101]: "https://etherscan.io/tx/",
-  [0]: "https://polygonscan.com/tx/",
 };
 
 export const CHAINS: Chain[] = [

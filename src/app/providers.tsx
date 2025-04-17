@@ -12,7 +12,7 @@ import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { chains } from "@lens-chain/sdk/viem";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { mainnet, PublicClient } from "@lens-protocol/client";
-import { polygon, mainnet as eth } from "viem/chains";
+import { mainnet as eth } from "viem/chains";
 import { HEART_COLORS, THEME_COLORS } from "./lib/constants";
 import { FullScreenVideo } from "./components/Common/types/common.types";
 
@@ -44,12 +44,9 @@ export const config = createConfig(
       .NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
     appUrl: "https://bridge.digitalax.xyz",
     appIcon: "https://brige.digitalax.xyz/favicon.ico",
-    chains: [chains.mainnet, polygon, eth],
+    chains: [chains.mainnet, eth],
     transports: {
       [chains.mainnet.id]: http("https://rpc.lens.xyz"),
-      [polygon.id]: http(
-        `https://polygon-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-      ),
       [eth.id]: http(
         `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
       ),
@@ -67,7 +64,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     open: false,
     allVideos: [],
     index: 0,
-    volume: 0.5
+    volume: 0.5,
   });
   const [lensClient, setLensClient] = useState<PublicClient | undefined>();
   const [notification, setNotification] = useState<string | undefined>();

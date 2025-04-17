@@ -1,15 +1,14 @@
 import { CHAINS, OAPP_ETH } from "@/app/lib/constants";
 import { ModalContext } from "@/app/providers";
 import { useModal } from "connectkit";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   createPublicClient,
   createWalletClient,
   http,
-  PublicClient,
   WalletClient,
 } from "viem";
-import { mainnet, polygon } from "viem/chains";
+import { mainnet } from "viem/chains";
 import { chains as lensChains } from "@lens-chain/sdk/viem";
 import { custom, useAccount } from "wagmi";
 import { Chain } from "../types/bridge.types";
@@ -34,24 +33,16 @@ const useBridge = (dict: any) => {
     to: CHAINS[1],
   });
 
-  const publicClient = createPublicClient({
-    chain:
-      chains.from.id == 232
-        ? lensChains.mainnet
-        : chains.from.id == 137
-        ? polygon
-        : mainnet,
-    transport: http("https://rpc.lens.xyz"),
-  });
-
-  const handleBridgeCheck = async (
-    publicClient: PublicClient
-  ): Promise<boolean> => {
+  const handleBridgeCheck = async (): Promise<boolean> => {
     if (!address) {
       return false;
     }
     if (chains.from == chains.to) {
       context?.setNotification?.(dict?.common?.chain);
+      return false;
+    }
+
+    if (chains.from.id == 137 || chains.to.id == 137) {
       return false;
     }
 
@@ -61,6 +52,30 @@ const useBridge = (dict: any) => {
     }
 
     try {
+      if (!(await handleBalance())) {
+        context?.setNotification?.(dict?.common?.tokens);
+
+        return false;
+      }
+    } catch (err: any) {
+      console.error(err.message);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleBalance = async () => {
+    try {
+      const publicClient = createPublicClient({
+        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
+        transport:
+          chains.from.id == 232
+            ? http("https://rpc.lens.xyz")
+            : http(
+                `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+              ),
+      });
       const balance = await publicClient.readContract({
         address: chains.from.address as `0x${string}`,
         abi: [
@@ -90,31 +105,44 @@ const useBridge = (dict: any) => {
       });
 
       if (balance < BigInt(amount * 10 ** 18)) {
-        context?.setNotification?.(dict?.common?.tokens);
+        setIsApproved(false);
         return false;
+      } else {
+        setIsApproved(true);
+        return true;
       }
     } catch (err: any) {
       console.error(err.message);
       return false;
     }
-
-    return true;
   };
 
   const handleApprove = async () => {
+    if (chains.from == chains.to) {
+      context?.setNotification?.(dict?.common?.chain);
+    }
+
+    if (chainId !== chains.from.id) {
+      openSwitchNetworks();
+    }
+
     setBridgeLoading(true);
 
     try {
       const clientWallet = createWalletClient({
-        chain:
-          chains.from.id == 232
-            ? lensChains.mainnet
-            : chains.from.id == 137
-            ? polygon
-            : mainnet,
+        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
         transport: custom((window as any).ethereum),
       });
 
+      const publicClient = createPublicClient({
+        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
+        transport:
+          chains.from.id == 232
+            ? http("https://rpc.lens.xyz")
+            : http(
+                `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+              ),
+      });
       const { request } = await publicClient.simulateContract({
         address: chains.from.address,
         abi: [
@@ -132,7 +160,7 @@ const useBridge = (dict: any) => {
               },
             ],
             name: "approve",
-            outputs: [{ internalType: "bool", name: "success", type: "bool" }],
+            outputs: [],
             stateMutability: "nonpayable",
             type: "function",
           },
@@ -140,7 +168,7 @@ const useBridge = (dict: any) => {
         functionName: "approve",
         args: [
           chains.from.id == 1 ? OAPP_ETH : chains.from.address,
-          BigInt(amount),
+          BigInt(amount * 10 ** 18),
         ],
         account: address,
       });
@@ -156,29 +184,43 @@ const useBridge = (dict: any) => {
     setBridgeLoading(false);
   };
 
-  const handleBridgeEthPoly = async (walletClient: WalletClient) => {
-    try {
-    } catch (err: any) {
-      console.error(err.message);
-    }
-  };
+  const handleBridgeAmount = async () => {
+    setBridgeLoading(true);
 
-  const handleBridgeEthLens = async (walletClient: WalletClient) => {
+    if (!(await handleBridgeCheck())) {
+      setBridgeLoading(false);
+      return;
+    }
+
+    const clientWallet = createWalletClient({
+      chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
+      transport: custom((window as any).ethereum),
+    });
+
     try {
       const sendParam = {
-        dstEid: chains.from.dstEid,
-        to: addressToBytes32(
-          "0xAA3e5ee4fdC831e5274FE7836c95D670dC2502e6"
-        ) as `0x${string}`,
-        amountLD: BigInt("1000000000000000"),
-        minAmountLD: BigInt("299950000000000"),
+        dstEid: chains.to.dstEid,
+        to: addressToBytes32(address!) as `0x${string}`,
+        amountLD: BigInt(amount * 10 ** 18),
+        minAmountLD: BigInt(0.95 * amount * 10 ** 18),
         extraOptions: "0x" as `0x${string}`,
         composeMsg: "0x" as `0x${string}`,
         oftCmd: "0x" as `0x${string}`,
       };
-
+      const publicClient = createPublicClient({
+        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
+        transport:
+          chains.from.id == 232
+            ? http("https://rpc.lens.xyz")
+            : http(
+                `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+              ),
+      });
       const feeQuote = await publicClient.readContract({
-        address: chains.from.address as `0x${string}`,
+        address:
+          chains.from.id == 232
+            ? (chains.from.address as `0x${string}`)
+            : OAPP_ETH,
         abi: [
           {
             type: "function",
@@ -214,20 +256,11 @@ const useBridge = (dict: any) => {
             ],
             outputs: [
               {
-                name: "msgFee",
+                name: "",
                 type: "tuple",
-                internalType: "struct MessagingFee",
                 components: [
-                  {
-                    name: "nativeFee",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                  {
-                    name: "lzTokenFee",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
+                  { name: "nativeFee", type: "uint256" },
+                  { name: "lzTokenFee", type: "uint256" },
                 ],
               },
             ],
@@ -242,8 +275,12 @@ const useBridge = (dict: any) => {
       const nativeFee = feeQuote.nativeFee;
       const lzTokenFee = feeQuote.lzTokenFee;
 
+
       const { request } = await publicClient.simulateContract({
-        address: chains.from.address,
+        address:
+          chains.from.id == 232
+            ? (chains.from.address as `0x${string}`)
+            : OAPP_ETH,
         abi: [
           {
             type: "function",
@@ -352,37 +389,8 @@ const useBridge = (dict: any) => {
         account: address,
       });
 
-      const res = await walletClient.writeContract(request);
+      const res = await clientWallet.writeContract(request);
       await publicClient.waitForTransactionReceipt({ hash: res });
-    } catch (err: any) {
-      console.error(err.message);
-    }
-  };
-
-  const handleBridgeAmount = async () => {
-    setBridgeLoading(true);
-
-    if (!(await handleBridgeCheck(publicClient))) {
-      setBridgeLoading(false);
-      return;
-    }
-
-    const clientWallet = createWalletClient({
-      chain:
-        chains.from.id == 232
-          ? lensChains.mainnet
-          : chains.from.id == 137
-          ? polygon
-          : mainnet,
-      transport: custom((window as any).ethereum),
-    });
-
-    try {
-      if (chains.from.id == 137 || chains.to.id == 137) {
-        await handleBridgeEthPoly(clientWallet);
-      } else {
-        await handleBridgeEthLens(clientWallet);
-      }
 
       setIsApproved(false);
       context?.setNotification?.(dict?.common?.bridging);
@@ -391,6 +399,12 @@ const useBridge = (dict: any) => {
     }
     setBridgeLoading(false);
   };
+
+  useEffect(() => {
+    if (address && amount > 0) {
+      handleBalance();
+    }
+  }, [address, amount]);
 
   return {
     amount,
