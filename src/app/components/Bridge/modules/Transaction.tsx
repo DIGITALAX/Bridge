@@ -87,18 +87,24 @@ const Transaction: FunctionComponent<TransactionProps> = ({
             />
           </div>
         </div>
-        <div className="relative w-full h-fit flex gap-2 sm:gap-5  items-center justify-center sm:justify-between sm:flex-nowrap flex-wrap">
+        <div
+          className={`relative w-full h-fit flex gap-2 sm:gap-5  items-center justify-center sm:justify-between sm:flex-nowrap flex-wrap ${
+            transaction?.destination?.status
+              ?.toLowerCase()
+              ?.includes("waiting") && "animate-pulse"
+          }`}
+        >
           <div className="relative w-fit gap-3 flex items-center justify-center flex-row">
             <div className="relative w-fit h-fit flex">
               {dict?.common?.dest}
             </div>
             <div
               className={`"relative w-fit h-fit flex uppercase ${
-                transaction?.source?.status
+                transaction?.destination?.status
                   ?.toLowerCase()
                   ?.includes("succeeded")
                   ? "text-[#19ef12]"
-                  : transaction?.source?.status
+                  : transaction?.destination?.status
                       ?.toLowerCase()
                       ?.includes("reverted")
                   ? "text-[#ef211a]"
@@ -110,12 +116,15 @@ const Transaction: FunctionComponent<TransactionProps> = ({
           </div>
           <div className="relative w-fit gap-3 flex items-center justify-center flex-row">
             <div className="relative w-fit h-fit flex">
-              {transaction?.destination?.tx?.txHash?.slice(0, 10) + "..."}
+              {transaction?.destination?.tx?.txHash
+                ? transaction?.destination?.tx?.txHash?.slice(0, 10) + "..."
+                : "...."}
             </div>
             <MdArrowOutward
               size={15}
               className="fill-mainText cursor-sewingHS"
               onClick={() =>
+                transaction?.destination?.tx?.txHash &&
                 window.open(
                   `${idToExplorer[transaction?.pathway?.dstEid]}${
                     transaction?.destination?.tx?.txHash

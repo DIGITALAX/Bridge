@@ -68,8 +68,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   });
   const [lensClient, setLensClient] = useState<PublicClient | undefined>();
   const [notification, setNotification] = useState<string | undefined>();
-  const [color, setColor] = useState<string>(THEME_COLORS[0]);
-  const [heartColor, setHeartColor] = useState<string>(THEME_COLORS[0]);
+  const [color, setColor] = useState<string>(THEME_COLORS[1]);
+  const [heartColor, setHeartColor] = useState<string>(THEME_COLORS[1]);
   const changeColor = () => {
     if (THEME_COLORS.indexOf(color) < 9) {
       setColor(THEME_COLORS[THEME_COLORS.indexOf(color) + 1]);
