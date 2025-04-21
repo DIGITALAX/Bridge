@@ -16,13 +16,7 @@ export async function GET(
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url>
         <loc>${baseUrl}/${lang}</loc>
-        <lastmod>${new Date().toISOString()}</lastmod>
       </url>
-      <url>
-        <loc>${baseUrl}/${lang}/about</loc>
-        <lastmod>${new Date().toISOString()}</lastmod>
-      </url>
-      <!-- Puedes añadir más rutas aquí -->
     </urlset>`;
 
   return new Response(xml, {
