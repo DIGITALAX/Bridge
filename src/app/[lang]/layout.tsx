@@ -21,6 +21,11 @@ export const metadata: Metadata = {
       follow: true,
     },
   },
+  pinterest: {
+    richPin: true
+  },
+  creator: "Emma-Jane MacKinnon-Lee",
+  publisher: "Emma-Jane MacKinnon-Lee",
   keywords: [
     "Web3",
     "Web3 Fashion",
