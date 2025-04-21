@@ -131,3 +131,5 @@ export const idiomaAIndice: { [key in Idiomas]: number } = {
   ["ű"]: 11,
   ["ŋ"]: 12,
 };
+
+export const LOCALES: string[] = ["en", "es"];
