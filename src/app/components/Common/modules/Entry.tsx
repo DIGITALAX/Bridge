@@ -10,7 +10,7 @@ import Transactions from "../../Bridge/modules/Transactions";
 
 export default function Entry({ dict }: { dict: any }) {
   const context = useContext(ModalContext);
-  const { chosenLanguage, setChosenLanguage } = useHeader();
+  const { chosenLanguage, setChosenLanguage, changeLanguage } = useHeader();
   return (
     <div
       className="w-full h-full flex flex-col gap-2 items-center justify-start py-4 px-3"
@@ -21,6 +21,7 @@ export default function Entry({ dict }: { dict: any }) {
           dict={dict}
           setChosenLanguage={setChosenLanguage}
           chosenLanguage={chosenLanguage}
+          changeLanguage={changeLanguage}
         />
         <Head>
           <title>DIGITALAX Bridge</title>

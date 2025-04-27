@@ -14,6 +14,8 @@ export type BarProps = {
   dict: any;
   setChosenLanguage: (e: SetStateAction<number>) => void;
   chosenLanguage: number;
+  changeLanguage: (lang: string) => void;
+
 };
 
 export type HeaderProps = {
