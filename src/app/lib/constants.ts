@@ -1,6 +1,6 @@
 import { Chain } from "../components/Bridge/types/bridge.types";
 
-export const INFURA_GATEWAY: string = "https://thedial.infura-ipfs.io";
+export const INFURA_GATEWAY: string = "https://cdn.digitalax.xyz";
 export const CHROMADIN: `0x${string}` =
   "0x16a362A10C1f6Bc0565C8fFAd298f1c2761630C5";
 export const LAYER_ZERO: string =
