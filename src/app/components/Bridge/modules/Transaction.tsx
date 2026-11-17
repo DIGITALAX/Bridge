@@ -2,7 +2,13 @@ import { FunctionComponent, JSX } from "react";
 import { TransactionProps } from "../types/bridge.types";
 import moment from "moment";
 import Image from "next/legacy/image";
-import { idToExplorer, idToImage, INFURA_GATEWAY } from "@/app/lib/constants";
+import {
+  idToExplorer,
+  idToImage,
+  INFURA_GATEWAY,
+  LAYER_ZERO_SCAN,
+} from "@/app/lib/constants";
+import { isTxHash } from "@/app/lib/helpers/isTxHash";
 import { IoIosArrowRoundForward } from "react-icons/io";
 import { MdArrowOutward } from "react-icons/md";
 
@@ -14,8 +20,28 @@ const Transaction: FunctionComponent<TransactionProps> = ({
     <div className="relative w-full h-fit flex text-sm px-2 flex-col gap-5 sm:gap-2 items-start justify-start">
       <div className="relative w-full h-fit flex">
         <div className="relative w-full h-fit sm:h-10 flex items-center justify-center sm:justify-between gap-5 sm:flex-nowrap flex-wrap">
-          <div className="relative w-fit h-fit flex">
-            {moment(transaction?.created).fromNow()}
+          <div className="relative w-fit h-fit flex flex-row gap-3 items-center justify-center">
+            <div className="relative w-fit h-fit flex">
+              {moment(transaction?.created).fromNow()}
+            </div>
+            {isTxHash(transaction?.source?.tx?.txHash) && (
+              <div
+                className="relative w-fit h-fit flex flex-row gap-1 items-center justify-center cursor-sewingHS hover:opacity-70"
+                title="LayerZero Scan"
+                onClick={() =>
+                  window.open(
+                    `${LAYER_ZERO_SCAN}${transaction?.source?.tx?.txHash}`,
+                    "_blank",
+                    "noopener,noreferrer"
+                  )
+                }
+              >
+                <div className="relative w-fit h-fit flex text-xs">
+                  LayerZero Scan
+                </div>
+                <MdArrowOutward size={12} className="fill-mainText" />
+              </div>
+            )}
           </div>
           <div className="relative w-fit h-fit gap-2 flex flex-row">
             <div className="relative w-fit h-fit flex">
@@ -78,10 +104,14 @@ const Transaction: FunctionComponent<TransactionProps> = ({
               size={15}
               className="fill-mainText cursor-sewingHS"
               onClick={() =>
+                idToExplorer[transaction?.pathway?.srcEid] &&
+                isTxHash(transaction?.source?.tx?.txHash) &&
                 window.open(
                   `${idToExplorer[transaction?.pathway?.srcEid]}${
                     transaction?.source?.tx?.txHash
-                  }`
+                  }`,
+                  "_blank",
+                  "noopener,noreferrer"
                 )
               }
             />
@@ -124,11 +154,14 @@ const Transaction: FunctionComponent<TransactionProps> = ({
               size={15}
               className="fill-mainText cursor-sewingHS"
               onClick={() =>
-                transaction?.destination?.tx?.txHash &&
+                idToExplorer[transaction?.pathway?.dstEid] &&
+                isTxHash(transaction?.destination?.tx?.txHash) &&
                 window.open(
                   `${idToExplorer[transaction?.pathway?.dstEid]}${
                     transaction?.destination?.tx?.txHash
-                  }`
+                  }`,
+                  "_blank",
+                  "noopener,noreferrer"
                 )
               }
             />

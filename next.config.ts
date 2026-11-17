@@ -20,34 +20,39 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@x402/core": false,
+      "@x402/evm": false,
+      "@x402/svm": false,
+      "@x402/extensions": false,
+      "@x402/express": false,
+      "@x402/fetch": false,
+    };
+    return config;
+  },
   async headers() {
-    let headersConfig: any[] = [];
-
-    const allowedOrigins = ["https://cdn.digitalax.xyz"];
-    allowedOrigins.forEach((origin) => {
-      headersConfig.push({
+    return [
+      {
         source: "/(.*)",
         headers: [
           {
-            key: "Access-Control-Allow-Origin",
-            value: origin,
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: "Access-Control-Allow-Headers",
-            value:
-              "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
           },
           {
-            key: "Access-Control-Allow-Methods",
-            value: "GET, POST, PUT, DELETE, OPTIONS",
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
           },
         ],
-      });
-    });
-
-    return headersConfig;
+      },
+    ];
   },
- 
 };
 
 export default nextConfig;

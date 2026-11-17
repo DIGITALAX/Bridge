@@ -43,7 +43,7 @@ export const config = createConfig(
     walletConnectProjectId: process.env
       .NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
     appUrl: "https://bridge.digitalax.xyz",
-    appIcon: "https://brige.digitalax.xyz/favicon.ico",
+    appIcon: "https://bridge.digitalax.xyz/favicon.ico",
     chains: [chains.mainnet, eth],
     transports: {
       [chains.mainnet.id]: http("https://rpc.lens.xyz"),

@@ -19,6 +19,7 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
     setOpenChains,
     isApproved,
     handleApprove,
+    supported,
     chains,
     setChains,
   } = useBridge(dict);
@@ -135,14 +136,23 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
             (chains?.from?.id == 1 && chains?.to?.id == 137) ? (
             <div className="relative w-full h-fit flex flex-col gap-5 items-center justify-start">
               <div
-                className="relative w-fit h-10 flex uppercase cursor-sewingHS text-center text-sm"
+                className="relative w-fit h-10 flex flex-col items-center justify-center uppercase cursor-sewingHS text-center text-sm"
                 onClick={() =>
-                  window.open("https://portal.polygon.technology/bridge")
+                  window.open(
+                    "https://portal.polygon.technology/bridge",
+                    "_blank",
+                    "noopener,noreferrer"
+                  )
                 }
-                dangerouslySetInnerHTML={{
-                  __html: `${dict?.common?.portal}...` || "",
-                }}
-              ></div>
+              >
+                {`${dict?.common?.portal ?? ""}...`
+                  .split(/<br\s*\/?>/i)
+                  .map((line: string, indice: number) => (
+                    <div key={indice} className="relative w-fit h-fit flex">
+                      {line}
+                    </div>
+                  ))}
+              </div>
             </div>
           ) : (
             <div className="relative w-full h-fit flex flex-row gap-3 items-center justify-center">
@@ -151,9 +161,10 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
                   className="relative rounded-md w-28 h-10 focus:outline-none flex border border-mainText text-sm p-3"
                   type="number"
                   min={0}
-                  step={1}
+                  step="any"
+                  inputMode="decimal"
                   value={amount}
-                  onChange={(e) => setAmount(Number(e.target.value))}
+                  onChange={(e) => setAmount(e.target.value)}
                 />
               </div>
               <div className="relative w-fit h-fit flex text-xl">$MONA</div>
@@ -161,31 +172,33 @@ const Bridge: FunctionComponent<BridgeProps> = ({ dict }): JSX.Element => {
           )}
         </div>
 
-        <div
-          className={`relative w-fit h-fit flex ${
-            !bridgeLoading && "cursor-sewingHS hover:opacity-70"
-          }`}
-          onClick={() =>
-            !bridgeLoading &&
-            (!isApproved ? handleApprove() : handleBridgeAmount())
-          }
-        >
-          <div className="relative w-28 h-10 flex items-center justify-center text-center rounded-md border border-mainText text-sm">
-            <div className="relative w-fit h-fit flex">
-              {bridgeLoading ? (
-                <AiOutlineLoading
-                  className="animate-spin"
-                  color={context?.heartColor}
-                  size={15}
-                />
-              ) : !isApproved ? (
-                dict?.common?.approve
-              ) : (
-                dict?.common?.bridge
-              )}
+        {supported && (
+          <div
+            className={`relative w-fit h-fit flex ${
+              !bridgeLoading && "cursor-sewingHS hover:opacity-70"
+            }`}
+            onClick={() =>
+              !bridgeLoading &&
+              (!isApproved ? handleApprove() : handleBridgeAmount())
+            }
+          >
+            <div className="relative w-28 h-10 flex items-center justify-center text-center rounded-md border border-mainText text-sm">
+              <div className="relative w-fit h-fit flex">
+                {bridgeLoading ? (
+                  <AiOutlineLoading
+                    className="animate-spin"
+                    color={context?.heartColor}
+                    size={15}
+                  />
+                ) : !isApproved ? (
+                  dict?.common?.approve
+                ) : (
+                  dict?.common?.bridge
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

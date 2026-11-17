@@ -1,25 +1,30 @@
-import { CHAINS, OAPP_ETH } from "@/app/lib/constants";
+import { CHAINS, MONA_DECIMALS, OAPP_ETH } from "@/app/lib/constants";
 import { ModalContext } from "@/app/providers";
-import { useModal } from "connectkit";
-import { useContext, useEffect, useState } from "react";
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  WalletClient,
-} from "viem";
+import { useContext, useEffect, useRef, useState } from "react";
+import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 import { chains as lensChains } from "@lens-chain/sdk/viem";
-import { custom, useAccount } from "wagmi";
+import { useAccount, useConfig, useSwitchChain } from "wagmi";
+import { getWalletClient } from "wagmi/actions";
 import { Chain } from "../types/bridge.types";
 import { addressToBytes32 } from "@/app/lib/helpers/addressToBytes32";
+import { parseAmount } from "@/app/lib/helpers/parseAmount";
+import {
+  ALLOWANCE_ABI,
+  APPROVE_ABI,
+  BALANCE_ABI,
+  QUOTE_SEND_ABI,
+  SEND_ABI,
+} from "@/app/lib/abis";
 
 const useBridge = (dict: any) => {
-  const { openSwitchNetworks } = useModal();
   const context = useContext(ModalContext);
+  const config = useConfig();
   const { chainId, address } = useAccount();
-  const [amount, setAmount] = useState<number>(1);
-  const [isApproved, setIsApproved] = useState<boolean>(false);
+  const { switchChainAsync } = useSwitchChain();
+  const refreshId = useRef<number>(0);
+  const [amount, setAmount] = useState<string>("1");
+  const [allowance, setAllowance] = useState<bigint | undefined>();
   const [bridgeLoading, setBridgeLoading] = useState<boolean>(false);
   const [openChains, setOpenChains] = useState<{ from: boolean; to: boolean }>({
     from: false,
@@ -33,378 +38,289 @@ const useBridge = (dict: any) => {
     to: CHAINS[1],
   });
 
-  const handleBridgeCheck = async (): Promise<boolean> => {
-    if (!address) {
-      return false;
-    }
-    if (chains.from == chains.to) {
-      context?.setNotification?.(dict?.common?.chain);
-      return false;
-    }
+  const amountWei = parseAmount(amount, MONA_DECIMALS);
+  const supported =
+    (chains.from.id == 1 && chains.to.id == 232) ||
+    (chains.from.id == 232 && chains.to.id == 1);
+  const needsApproval = supported && chains.from.id == 1;
+  const isApproved =
+    !needsApproval ||
+    (allowance !== undefined &&
+      amountWei !== undefined &&
+      allowance >= amountWei);
 
-    if (chains.from.id == 137 || chains.to.id == 137) {
-      return false;
-    }
+  const getSourceClient = () =>
+    createPublicClient({
+      chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
+      transport:
+        chains.from.id == 232
+          ? http("https://rpc.lens.xyz")
+          : http(
+              `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+            ),
+    });
 
-    if (chainId !== chains.from.id) {
-      openSwitchNetworks();
-      return false;
-    }
-
-    try {
-      if (!(await handleBalance())) {
-        context?.setNotification?.(dict?.common?.tokens);
-
-        return false;
-      }
-    } catch (err: any) {
-      console.error(err.message);
-      return false;
-    }
-
-    return true;
+  const readAllowance = async (
+    publicClient: ReturnType<typeof getSourceClient>,
+    owner: `0x${string}`
+  ): Promise<bigint> => {
+    return await publicClient.readContract({
+      address: chains.from.address as `0x${string}`,
+      abi: ALLOWANCE_ABI,
+      functionName: "allowance",
+      args: [owner, OAPP_ETH],
+    });
   };
 
-  const handleBalance = async () => {
-    try {
-      const publicClient = createPublicClient({
-        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
-        transport:
-          chains.from.id == 232
-            ? http("https://rpc.lens.xyz")
-            : http(
-                `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-              ),
-      });
-      const balance = await publicClient.readContract({
-        address: chains.from.address as `0x${string}`,
-        abi: [
-          {
-            constant: true,
-            inputs: [
-              {
-                name: "_owner",
-                type: "address",
-              },
-            ],
-            name: "balanceOf",
-            outputs: [
-              {
-                name: "balance",
-                type: "uint256",
-              },
-            ],
-            payable: false,
-            stateMutability: "view",
-            type: "function",
-          },
-        ],
-        functionName: "balanceOf",
-        args: [address as `0x${string}`],
-        account: address,
-      });
+  const handleError = (err: any) => {
+    console.error(err?.message);
+    if (
+      /user rejected|user denied|rejected the request/i.test(
+        `${err?.shortMessage ?? ""} ${err?.message ?? ""}`
+      )
+    ) {
+      return;
+    }
+    context?.setNotification?.(dict?.common?.error);
+  };
 
-      if (balance < BigInt(amount * 10 ** 18)) {
-        setIsApproved(false);
-        return false;
-      } else {
-        setIsApproved(true);
-        return true;
+  const handleBridgeCheck = async (): Promise<
+    | {
+        publicClient: ReturnType<typeof getSourceClient>;
+        walletClient: Awaited<ReturnType<typeof getWalletClient>>;
+        owner: `0x${string}`;
+        value: bigint;
+      }
+    | undefined
+  > => {
+    if (!address) {
+      return undefined;
+    }
+
+    if (chains.from.id == chains.to.id) {
+      context?.setNotification?.(dict?.common?.chain);
+      return undefined;
+    }
+
+    if (!supported) {
+      return undefined;
+    }
+
+    if (amountWei === undefined) {
+      context?.setNotification?.(dict?.common?.amount);
+      return undefined;
+    }
+
+    const sourceId = chains.from.id as 1 | 232;
+
+    if (chainId !== sourceId) {
+      try {
+        await switchChainAsync({ chainId: sourceId });
+      } catch (err: any) {
+        console.error(err?.message);
+        context?.setNotification?.(dict?.common?.switch);
+        return undefined;
+      }
+    }
+
+    const walletClient = await getWalletClient(config, {
+      chainId: sourceId,
+      account: address,
+    });
+
+    const walletChainId = await walletClient.getChainId();
+
+    if (
+      walletChainId !== sourceId ||
+      walletClient?.account?.address?.toLowerCase() !== address.toLowerCase()
+    ) {
+      context?.setNotification?.(dict?.common?.switch);
+      return undefined;
+    }
+
+    const publicClient = getSourceClient();
+
+    const code = await publicClient.getCode({ address });
+    if (code && code !== "0x" && !code.toLowerCase().startsWith("0xef0100")) {
+      context?.setNotification?.(dict?.common?.contract);
+      return undefined;
+    }
+
+    const balance = await publicClient.readContract({
+      address: chains.from.address as `0x${string}`,
+      abi: BALANCE_ABI,
+      functionName: "balanceOf",
+      args: [address],
+      account: address,
+    });
+
+    if (balance < amountWei) {
+      context?.setNotification?.(dict?.common?.tokens);
+      return undefined;
+    }
+
+    return { publicClient, walletClient, owner: address, value: amountWei };
+  };
+
+  const handleAllowance = async () => {
+    const id = ++refreshId.current;
+
+    if (!address || !needsApproval) {
+      setAllowance(undefined);
+      return;
+    }
+
+    try {
+      const current = await readAllowance(getSourceClient(), address);
+      if (id === refreshId.current) {
+        setAllowance(current);
       }
     } catch (err: any) {
-      console.error(err.message);
-      return false;
+      console.error(err?.message);
+      if (id === refreshId.current) {
+        setAllowance(undefined);
+      }
     }
   };
 
   const handleApprove = async () => {
-    if (chains.from == chains.to) {
+    if (bridgeLoading) return;
+
+    if (chains.from.id == chains.to.id) {
       context?.setNotification?.(dict?.common?.chain);
+      return;
     }
 
-    if (chainId !== chains.from.id) {
-      openSwitchNetworks();
+    if (!needsApproval) {
+      return;
     }
 
     setBridgeLoading(true);
 
     try {
-      const clientWallet = createWalletClient({
-        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
-        transport: custom((window as any).ethereum),
-      });
+      const checked = await handleBridgeCheck();
+      if (!checked) {
+        setBridgeLoading(false);
+        return;
+      }
+      const { publicClient, walletClient, owner, value } = checked;
 
-      const publicClient = createPublicClient({
-        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
-        transport:
-          chains.from.id == 232
-            ? http("https://rpc.lens.xyz")
-            : http(
-                `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-              ),
-      });
+      const current = await readAllowance(publicClient, owner);
+      refreshId.current++;
+      setAllowance(current);
+
+      if (current >= value) {
+        setBridgeLoading(false);
+        return;
+      }
+
       const { request } = await publicClient.simulateContract({
         address: chains.from.address,
-        abi: [
-          {
-            inputs: [
-              {
-                internalType: "address",
-                name: "spender",
-                type: "address",
-              },
-              {
-                internalType: "uint256",
-                name: "tokens",
-                type: "uint256",
-              },
-            ],
-            name: "approve",
-            outputs: [],
-            stateMutability: "nonpayable",
-            type: "function",
-          },
-        ],
+        abi: APPROVE_ABI,
         functionName: "approve",
-        args: [
-          chains.from.id == 1 ? OAPP_ETH : chains.from.address,
-          BigInt(amount * 10 ** 18),
-        ],
-        account: address,
+        args: [OAPP_ETH, value],
+        account: owner,
       });
 
-      const res = await clientWallet.writeContract(request);
-      await publicClient.waitForTransactionReceipt({ hash: res });
+      const res = await walletClient.writeContract(request);
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: res,
+      });
 
-      setIsApproved(true);
+      if (receipt.status !== "success") {
+        throw new Error("Approval reverted");
+      }
+
+      const updated = await readAllowance(publicClient, owner);
+      refreshId.current++;
+      setAllowance(updated);
     } catch (err: any) {
-      console.error(err.message);
+      handleError(err);
     }
 
     setBridgeLoading(false);
   };
 
   const handleBridgeAmount = async () => {
+    if (bridgeLoading) return;
+
     setBridgeLoading(true);
 
-    if (!(await handleBridgeCheck())) {
-      setBridgeLoading(false);
-      return;
-    }
-
-    const clientWallet = createWalletClient({
-      chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
-      transport: custom((window as any).ethereum),
-    });
-
     try {
+      const checked = await handleBridgeCheck();
+      if (!checked) {
+        setBridgeLoading(false);
+        return;
+      }
+      const { publicClient, walletClient, owner, value } = checked;
+
+      if (needsApproval) {
+        const current = await readAllowance(publicClient, owner);
+        refreshId.current++;
+        setAllowance(current);
+
+        if (current < value) {
+          setBridgeLoading(false);
+          return;
+        }
+      }
+
       const sendParam = {
         dstEid: chains.to.dstEid,
-        to: addressToBytes32(address!) as `0x${string}`,
-        amountLD: BigInt(amount * 10 ** 18),
-        minAmountLD: BigInt(0.95 * amount * 10 ** 18),
+        to: addressToBytes32(owner) as `0x${string}`,
+        amountLD: value,
+        minAmountLD: (value * BigInt(95)) / BigInt(100),
         extraOptions: "0x" as `0x${string}`,
         composeMsg: "0x" as `0x${string}`,
         oftCmd: "0x" as `0x${string}`,
       };
-      const publicClient = createPublicClient({
-        chain: chains.from.id == 232 ? lensChains.mainnet : mainnet,
-        transport:
-          chains.from.id == 232
-            ? http("https://rpc.lens.xyz")
-            : http(
-                `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-              ),
-      });
+
+      const oapp =
+        chains.from.id == 232
+          ? (chains.from.address as `0x${string}`)
+          : OAPP_ETH;
+
       const feeQuote = await publicClient.readContract({
-        address:
-          chains.from.id == 232
-            ? (chains.from.address as `0x${string}`)
-            : OAPP_ETH,
-        abi: [
-          {
-            type: "function",
-            name: "quoteSend",
-            inputs: [
-              {
-                name: "_sendParam",
-                type: "tuple",
-                internalType: "struct SendParam",
-                components: [
-                  { name: "dstEid", type: "uint32", internalType: "uint32" },
-                  { name: "to", type: "bytes32", internalType: "bytes32" },
-                  {
-                    name: "amountLD",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                  {
-                    name: "minAmountLD",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                  {
-                    name: "extraOptions",
-                    type: "bytes",
-                    internalType: "bytes",
-                  },
-                  { name: "composeMsg", type: "bytes", internalType: "bytes" },
-                  { name: "oftCmd", type: "bytes", internalType: "bytes" },
-                ],
-              },
-              { name: "_payInLzToken", type: "bool", internalType: "bool" },
-            ],
-            outputs: [
-              {
-                name: "",
-                type: "tuple",
-                components: [
-                  { name: "nativeFee", type: "uint256" },
-                  { name: "lzTokenFee", type: "uint256" },
-                ],
-              },
-            ],
-            stateMutability: "view",
-          },
-        ],
+        address: oapp,
+        abi: QUOTE_SEND_ABI,
         functionName: "quoteSend",
         args: [sendParam, false],
-        account: address,
+        account: owner,
       });
 
       const nativeFee = feeQuote.nativeFee;
       const lzTokenFee = feeQuote.lzTokenFee;
 
-
       const { request } = await publicClient.simulateContract({
-        address:
-          chains.from.id == 232
-            ? (chains.from.address as `0x${string}`)
-            : OAPP_ETH,
-        abi: [
-          {
-            type: "function",
-            name: "send",
-            inputs: [
-              {
-                name: "_sendParam",
-                type: "tuple",
-                internalType: "struct SendParam",
-                components: [
-                  { name: "dstEid", type: "uint32", internalType: "uint32" },
-                  { name: "to", type: "bytes32", internalType: "bytes32" },
-                  {
-                    name: "amountLD",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                  {
-                    name: "minAmountLD",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                  {
-                    name: "extraOptions",
-                    type: "bytes",
-                    internalType: "bytes",
-                  },
-                  { name: "composeMsg", type: "bytes", internalType: "bytes" },
-                  { name: "oftCmd", type: "bytes", internalType: "bytes" },
-                ],
-              },
-              {
-                name: "_fee",
-                type: "tuple",
-                internalType: "struct MessagingFee",
-                components: [
-                  {
-                    name: "nativeFee",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                  {
-                    name: "lzTokenFee",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                ],
-              },
-              {
-                name: "_refundAddress",
-                type: "address",
-                internalType: "address",
-              },
-            ],
-            outputs: [
-              {
-                name: "msgReceipt",
-                type: "tuple",
-                internalType: "struct MessagingReceipt",
-                components: [
-                  { name: "guid", type: "bytes32", internalType: "bytes32" },
-                  { name: "nonce", type: "uint64", internalType: "uint64" },
-                  {
-                    name: "fee",
-                    type: "tuple",
-                    internalType: "struct MessagingFee",
-                    components: [
-                      {
-                        name: "nativeFee",
-                        type: "uint256",
-                        internalType: "uint256",
-                      },
-                      {
-                        name: "lzTokenFee",
-                        type: "uint256",
-                        internalType: "uint256",
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                name: "oftReceipt",
-                type: "tuple",
-                internalType: "struct OFTReceipt",
-                components: [
-                  {
-                    name: "amountSentLD",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                  {
-                    name: "amountReceivedLD",
-                    type: "uint256",
-                    internalType: "uint256",
-                  },
-                ],
-              },
-            ],
-            stateMutability: "payable",
-          },
-        ],
+        address: oapp,
+        abi: SEND_ABI,
         functionName: "send",
-        args: [sendParam, { nativeFee, lzTokenFee }, address!],
+        args: [sendParam, { nativeFee, lzTokenFee }, owner],
         value: nativeFee,
-        account: address,
+        account: owner,
       });
 
-      const res = await clientWallet.writeContract(request);
-      await publicClient.waitForTransactionReceipt({ hash: res });
+      const res = await walletClient.writeContract(request);
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: res,
+      });
 
-      setIsApproved(false);
+      if (receipt.status !== "success") {
+        throw new Error("Bridge transaction reverted");
+      }
+
       context?.setNotification?.(dict?.common?.bridging);
     } catch (err: any) {
-      console.error(err.message);
+      handleError(err);
     }
+
+    await handleAllowance();
     setBridgeLoading(false);
   };
 
   useEffect(() => {
-    if (address && amount > 0) {
-      handleBalance();
-    }
-  }, [address, amount]);
+    handleAllowance();
+  }, [address, chains.from.id, chains.to.id]);
 
   return {
     amount,
@@ -415,6 +331,7 @@ const useBridge = (dict: any) => {
     setOpenChains,
     handleApprove,
     isApproved,
+    supported,
     chains,
     setChains,
   };

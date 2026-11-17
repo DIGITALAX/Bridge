@@ -8,6 +8,12 @@ export const LAYER_ZERO: string =
 export const OAPP_ETH: `0x${string}` =
   "0xeB50d8181cEd62CeE237B9729fe597F3B2526eb7";
 
+export const MONA_DECIMALS: number = 18;
+export const LAYER_ZERO_SCAN: string = "https://layerzeroscan.com/tx/";
+export const RATE_LIMIT_WINDOW_MS: number = 60 * 1000;
+export const RATE_LIMIT_SWAGGER: number = 60;
+export const MAX_SWAGGER_BODY_BYTES: number = 1024;
+
 export const idToImage: { [key in number]: string } = {
   [30101]: "QmYJ6cpGRgQAr2d5hJDJ9CaJukt2szcHc1AqFBy9m6knUw",
   [30373]: "QmYCDxCv7mJyjn49n84kP6d3ADgGp422ukKzRyd2ZcGEsW",
